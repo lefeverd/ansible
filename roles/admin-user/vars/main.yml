@@ -1,0 +1,6 @@
+---
+
+root_password: "{{ vault_root_password }}"
+admin_username: dvd
+admin_password: "{{ vault_admin_password }}"
+admin_ssh_authorized_keys: "{{ vault_admin_ssh_authorized_keys }}"

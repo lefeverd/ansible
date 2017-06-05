@@ -1,0 +1,11 @@
+---
+
+- hosts: vagrant
+  gather_facts: False
+  roles:
+    - ssh-hardening
+    - admin-user
+    - ufw
+    - tersmitten.postfix
+    - logwatch
+    - angstwad.docker_ubuntu

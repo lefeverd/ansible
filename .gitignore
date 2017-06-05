@@ -1,0 +1,5 @@
+.vagrant
+hosts
+*.retry
+roles/jenkins
+roles/vpn
