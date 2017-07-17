@@ -1,0 +1,24 @@
+---
+
+- hosts: hstore
+  gather_facts: False
+  roles:
+    - ssh-hardening
+    - admin-user
+    - ufw
+    - tersmitten.postfix
+    - logwatch
+    - angstwad.docker_ubuntu
+  vars:
+    - ufw_allow_ports:
+      - 22
+      - 2222
+      - 80
+      - 443
+      - 655 # tinc
+      - 2375 # docker (only for dev)
+    - docker_group_members:
+      - vagrant
+      - dvd
+    - docker_opts: >
+        -H tcp://0.0.0.0:2375
