@@ -1,0 +1,7 @@
+---
+# defaults file for docker-registry
+
+docker_registry_path: /usr/local/docker-registry
+docker_registry_certs_path: /usr/local/docker-registry/certs
+docker_registry_cert: "{{ vault_docker_registry_cert }}"
+docker_registry_key: "{{ vault_docker_registry_key }}"

@@ -1,0 +1,40 @@
+---
+
+- fail: msg="Variable '{{ item }}' is not defined"
+  when: item not in vars
+  with_items: 
+     - docker_registry_cert
+     - docker_registry_key
+
+- name: Docker-registry | Create registry directory
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0777
+    owner: dvd
+    group: dvd
+  become: true
+  with_items:
+    - "{{ docker_registry_path }}"
+    - "{{ docker_registry_certs_path }}"
+
+- name: Docker-registry | Create docker-compose
+  template:
+    src: docker-compose.yml.j2
+    dest: "{{ docker_registry_path }}/docker-compose.yml"
+    mode: 0644
+    owner: root
+    group: root
+
+- name: Docker-registry | Copy certificate
+  copy:
+    content: "{{ docker_registry_cert }}"
+    dest: "{{ docker_registry_certs_path }}/registry.crt"
+
+- name: Docker-registry | Copy certificate key
+  copy:
+    content: "{{ docker_registry_key }}"
+    dest: "{{ docker_registry_certs_path }}/registry.key"
+
+- name: Run docker-compose up
+  command: /usr/local/bin/docker-compose -f {{ docker_registry_path }}/docker-compose.yml up -d

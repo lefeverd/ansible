@@ -1,0 +1,52 @@
+version: '2'
+
+services:
+  postgres:
+    container_name: postgres
+    image: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+    - POSTGRES_DB=ttrss
+    - POSTGRES_USER=ttrss
+    - POSTGRES_PASSWORD=ttrsspassword
+
+  ttrss:
+    container_name: ttrss
+    image: registry.horsducommun.be:5000/ttrss
+    depends_on:
+      - postgres
+{% if ttrss_virtual_host is not defined %}
+    ports:
+      - "80:80"
+{% endif %}
+    volumes:
+      - ttrss-themes:/var/www/themes
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=ttrss
+      - DB_USER=ttrss
+      - DB_PASS=ttrsspassword
+      - DB_TYPE=pgsql
+      - SELF_URL_PATH={{ ttrss_self_url_path }}
+{% if ttrss_virtual_host is defined %}
+      - VIRTUAL_HOST={{ ttrss_virtual_host }}
+{% endif %}
+{% if ttrss_letsencrypt_host is defined %}
+      - LETSENCRYPT_HOST={{ ttrss_letsencrypt_host }}
+{% endif %}
+{% if ttrss_letsencrypt_email is defined %}
+      - LETSENCRYPT_EMAIL={{ ttrss_letsencrypt_email }}
+{% endif %}
+
+volumes:
+  ttrss-themes:
+  postgres-data:
+
+{% if ttrss_virtual_host is defined %}
+networks:
+  default:
+    external:
+      name: nginx-proxy
+{% endif %}

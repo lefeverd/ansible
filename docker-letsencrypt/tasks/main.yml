@@ -1,0 +1,36 @@
+---
+
+- fail: msg="Variable '{{ item }}' is not defined"
+  when: item not in vars
+  with_items: 
+     - docker_letsencrypt_path
+     - docker_letsencrypt_certs_path
+
+- name: Docker-letsencrypt | Create letsencrypt directory
+  file:
+    path: "{{ item }}"
+    state: directory
+  become: true
+  with_items:
+    - "{{ docker_letsencrypt_path }}"
+    - "{{ docker_letsencrypt_certs_path }}"
+
+- name: Docker-letsencrypt | Get docker-gen template
+  get_url:
+    url: https://raw.githubusercontent.com/jwilder/nginx-proxy/master/nginx.tmpl
+    dest: "{{ docker_letsencrypt_nginx_tmpl_path }}"
+
+- name: Docker-letsencrypt | Create docker-compose
+  template:
+    src: docker-compose.yml.j2
+    dest: "{{ docker_letsencrypt_path }}/docker-compose.yml"
+    mode: 0644
+    owner: root
+    group: root
+
+- name: Docker-letsencrypt | Create docker network
+  shell: "docker network create nginx-proxy"
+  ignore_errors: yes
+
+- name: Docker-letsencrypt | Run docker-compose up
+  command: /usr/local/bin/docker-compose -f {{ docker_letsencrypt_path }}/docker-compose.yml up -d

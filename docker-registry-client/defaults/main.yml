@@ -1,0 +1,4 @@
+---
+# defaults file for docker-registry-client
+
+docker_registry_cert: "{{ vault_docker_registry_cert }}"
