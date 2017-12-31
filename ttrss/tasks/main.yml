@@ -1,0 +1,27 @@
+---
+
+- fail: msg="Variable '{{ item }}' is not defined"
+  when: item not in vars
+  with_items: 
+    - ttrss_path
+    - ttrss_self_url_path
+
+- name: TTRSS | Create TTRTS directory
+  file:
+    path: "{{ ttrss_path }}"
+    state: directory
+    mode: 0777
+    owner: dvd
+    group: dvd
+  become: true
+
+- name: TTRSS | Create docker-compose
+  template:
+    src: docker-compose.yml.j2
+    dest: "{{ ttrss_path }}/docker-compose.yml"
+    mode: 0644
+    owner: root
+    group: root
+
+- name: TTRSS | Run docker-compose up
+  command: "/usr/local/bin/docker-compose -f {{ ttrss_path }}/docker-compose.yml up -d"

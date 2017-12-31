@@ -1,0 +1,18 @@
+---
+
+- fail: msg="Variable '{{ item }}' is not defined"
+  when: item not in vars
+  with_items: 
+     - docker_registry_fqdn
+     - docker_registry_cert
+
+- name: Docker-registry-client | Ensure Docker certs directory exists
+  file:
+    path: /etc/docker/certs.d/{{ docker_registry_fqdn }}/
+    state: directory
+    mode: 0755
+
+- name: Docker-registry | Copy certificate
+  copy:
+    content: "{{ docker_registry_cert }}"
+    dest: "/etc/docker/certs.d/{{ docker_registry_fqdn }}/ca.crt"

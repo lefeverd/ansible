@@ -1,0 +1,5 @@
+---
+# defaults file for docker-registry
+
+docker_registry_path: /usr/local/docker-registry
+docker_registry_certs_path: /usr/local/docker-registry/certs

@@ -1,0 +1,113 @@
+---
+
+# See https://dmsimard.com/2016/03/15/changing-the-ssh-port-with-ansible/
+
+# ansible_port can change throughout this role, keep a copy around
+- name: Set configured port fact
+  set_fact:
+    configured_port: "{{ ansible_port }}"
+
+# From localhost, check if we're able to reach {{ ansible_host }} on
+# port 22
+- name: Check if we're using the default SSH port
+  wait_for:
+    port: "22"
+    state: "started"
+    host: "{{ ansible_host }}"
+    connect_timeout: "5"
+    timeout: "10"
+  delegate_to: "localhost"
+  ignore_errors: "yes"
+  register: default_ssh
+
+- debug:
+    var: default_ssh
+
+# If reachable, continue the following tasks with this port
+- name: Set inventory ansible_port to default
+  set_fact:
+    ansible_port: "22"
+  when: default_ssh is defined and
+        default_ssh.state is defined and
+        default_ssh.state == "started"
+  register: ssh_port_set
+
+# If unreachable on port 22, check if we're able to reach
+# {{ ansible_host }} on {{ ansible_port }} provided by the inventory
+# from localhost
+- name: Check if we're using the inventory-provided SSH port
+  wait_for:
+    port: "{{ ansible_port }}"
+    state: "started"
+    host: "{{ ansible_host }}"
+    connect_timeout: "5"
+    timeout: "10"
+  delegate_to: "localhost"
+  ignore_errors: "yes"
+  register: configured_ssh
+  when: default_ssh is defined and
+        default_ssh.state is undefined
+
+# If {{ ansible_port }} is reachable, we don't need to do anything special
+- name: SSH port is configured properly
+  debug:
+    msg: "SSH port is configured properly"
+  when: configured_ssh is defined and
+        configured_ssh.state is defined and
+        configured_ssh.state == "started"
+  register: ssh_port_set
+
+# If the SSH port is neither the default or the configured, give up.
+- name: Fail if SSH port was not auto-detected (unknown)
+  fail:
+    msg: "The SSH port is neither 22 or {{ ansible_port }}."
+  when: ssh_port_set is undefined
+
+# Sanity check, make sure Ansible is able to connect to the host
+- name: Confirm host connection works
+  ping:
+
+
+- name: Strict SSH configuration
+  lineinfile: >
+    dest=/etc/ssh/sshd_config
+    state=present
+    regexp='^#?{{ item.key }}'
+    line='{{ item.key }} {{ item.value }}'
+    validate='/usr/sbin/sshd -t -f %s'
+  with_items:
+    - { key: 'PermitRootLogin',        value: 'no'}
+    - { key: 'PubkeyAuthentication',   value: 'yes'}
+    - { key: 'PasswordAuthentication', value: 'no'}
+    - { key: 'MaxAuthTries',           value: "5"}
+    - { key: 'LoginGraceTime',         value: "60"}
+    - { key: 'MaxSessions',            value: "5"}
+    - { key: 'MaxStartups',            value: "10:30:60"}
+    - { key: 'Port',                   value: '{{ configured_port }}' }
+  #become: True
+  notify: "Restart sshd"
+
+#- name: Setup selinux for alternate SSH port
+#  seport:
+#    ports: "{{ configured_port }}"
+#    proto: "tcp"
+#    setype: "ssh_port_t"
+#    state: "present"
+#  become: true
+
+# We notified "Restart sshd" if we modified the sshd config.
+# By calling flush_handlers, we make sure the handler is run *right now*
+- name: Ensure SSH is reloaded if need be
+  meta: flush_handlers
+
+# We're done, make sure ansible_port is set properly so that any tasks
+# after this use the right ansible_port.
+- name: Ensure we use the configured SSH port for the remainder of the role
+  set_fact:
+    ansible_port: "{{ configured_port }}"
+
+# Gather facts should be set to false when running this role since it will
+# fail if the Ansible SSH port is not set correctly.
+# We run setup to gather facts here once the SSH port is set up.
+- name: Run deferred setup to gather facts
+  setup:

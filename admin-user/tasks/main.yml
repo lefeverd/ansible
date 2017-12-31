@@ -1,0 +1,42 @@
+---
+
+- fail: msg="Variable '{{ item }}' is not defined"
+  when: item not in vars
+  with_items: 
+     - root_password
+     - admin_username
+     - admin_password
+
+- name: change root password
+  user: name=root password={{ root_password | password_hash('sha512') }}
+  become: True
+
+- name: Ensure sudoers.d is enabled
+  lineinfile: >
+    dest=/etc/sudoers
+    regexp='^#includedir /etc/sudoers.d'
+    line='#includedir /etc/sudoers.d'
+    state=present backup=yes
+  become: True
+
+- name: Add user
+  user: name={{ admin_username }} password={{ admin_password | password_hash('sha512') }} shell=/bin/bash
+  become: True
+
+- name: create sudoer file for user
+  template:
+    src: sudoers.d.j2
+    dest: "/etc/sudoers.d/{{ admin_username }}"
+    mode: 0440
+    owner: root
+    group: root
+    validate: "/usr/sbin/visudo -cf %s"
+  become: True
+
+- name: Set up authorized keys for user
+  authorized_key:
+    user: "{{ admin_username }}"
+    state: present
+    key: '{{ item }}'
+  with_items: "{{ admin_ssh_authorized_keys }}"
+  become: True
