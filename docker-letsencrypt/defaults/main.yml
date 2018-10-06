@@ -3,3 +3,5 @@
 docker_letsencrypt_path: /usr/local/letsencrypt
 docker_letsencrypt_certs_path: "{{ docker_letsencrypt_path }}/certs"
 docker_letsencrypt_nginx_tmpl_path: "{{ docker_letsencrypt_path }}/nginx.tmpl"
+docker_nginx_letsencrypt_http_port: 80
+docker_nginx_letsencrypt_https_port: 443

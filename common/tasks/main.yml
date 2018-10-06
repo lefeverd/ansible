@@ -12,6 +12,7 @@
   ignore_errors: true
   register: pip_is_installed
   changed_when: false
+  check_mode: no
 
 - block:
 

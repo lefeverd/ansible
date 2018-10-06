@@ -2,12 +2,29 @@ version: '2'
 
 services:
 
+{% if docker_nginx_letsencrypt_use_sslh %}
+
+  # SSLH can split VPN / HTTPS trafic coming to 443 and redirect to correct container
+  sslh:
+    container_name: sslh
+    image: amondit/sslh
+    ports:
+      - "443:443"
+    network_mode: host
+    environment:
+      HTTPS_HOST: 127.0.0.1
+      HTTPS_PORT: {{ docker_nginx_letsencrypt_https_port }}
+      OPENVPN_HOST: {{ docker_nginx_letsencrypt_sslh_openvpn_host }}
+      OPENVPN_PORT: {{ docker_nginx_letsencrypt_sslh_openvpn_port }}
+
+{% endif %}
+
   nginx:
     container_name: nginx
     image: nginx
     ports:
-      - "80:80"
-      - "443:443"
+      - "{{ docker_nginx_letsencrypt_http_port }}:80"
+      - "{{ docker_nginx_letsencrypt_https_port }}:443"
     volumes:
       - /etc/nginx/conf.d
       - /etc/nginx/vhost.d
